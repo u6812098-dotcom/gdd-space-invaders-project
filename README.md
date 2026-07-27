@@ -1,6 +1,4 @@
-# GDD Space Invaders Project Starter
-
-This is a starting codebase for GDD Project.
+# \-Team members-6812098-Thu Ta Aung-6736501-Sai Thiha Aung-
 
 ## References
 
