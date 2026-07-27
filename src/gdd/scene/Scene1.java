@@ -1,13 +1,19 @@
 package gdd.scene;
 
 import gdd.AudioPlayer;
+import gdd.SFXPlayer;
 import gdd.Game;
 import static gdd.Global.*;
 import gdd.SpawnDetails;
 import gdd.powerup.PowerUp;
 import gdd.powerup.SpeedUp;
+import gdd.powerup.MultiShot;
 import gdd.sprite.Alien1;
 import gdd.sprite.Enemy;
+import gdd.sprite.Alien2;
+import gdd.sprite.Alien3;
+import gdd.sprite.Boss1;
+import gdd.sprite.Boss2;
 import gdd.sprite.Explosion;
 import gdd.sprite.Player;
 import gdd.sprite.Shot;
@@ -20,6 +26,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.Image;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +43,7 @@ public class Scene1 extends JPanel {
     private List<Explosion> explosions;
     private List<Shot> shots;
     private Player player;
-    // private Shot shot;
+    private int playerDeathDelay = 0;
 
     final int BLOCKHEIGHT = 50;
     final int BLOCKWIDTH = 50;
@@ -48,6 +55,15 @@ public class Scene1 extends JPanel {
 
     private boolean inGame = true;
     private String message = "Game Over";
+    
+    private Image bgImage;
+    
+    private int speedUpsCollected = 0;
+    private int multiShotsCollected = 0;
+    private int Wave=0;
+    
+    private boolean bossDefeated = false;
+    private int transitionDelay = 0;
 
     private final Dimension d = new Dimension(BOARD_WIDTH, BOARD_HEIGHT);
     private final Random randomizer = new Random();
@@ -55,46 +71,43 @@ public class Scene1 extends JPanel {
     private Timer timer;
     private final Game game;
 
-    private int currentRow = -1;
-    // TODO load this map from a file
-    private int mapOffset = 0;
     private final int[][] MAP = {
         {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0},
+        {1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1},
+        {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+        {0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+        {0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+        {0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0},
+        {0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0},
+        {0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1},
+        {0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+        {0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0}
     };
 
     private HashMap<Integer, SpawnDetails> spawnMap = new HashMap<>();
     private AudioPlayer audioPlayer;
-    private int lastRowToShow;
-    private int firstRowToShow;
 
     public Scene1(Game game) {
         this.game = game;
-        // initBoard();
-        // gameInit();
+        loadImages();
         loadSpawnDetails();
+    }
+    private void loadImages() {
+        bgImage = new ImageIcon(IMG_BG).getImage(); 
     }
 
     private void initAudio() {
@@ -108,20 +121,39 @@ public class Scene1 extends JPanel {
     }
 
     private void loadSpawnDetails() {
-        // TODO load this from a file
-        spawnMap.put(50, new SpawnDetails("PowerUp-SpeedUp", 100, 0));
-        spawnMap.put(200, new SpawnDetails("Alien1", 200, 0));
-        spawnMap.put(300, new SpawnDetails("Alien1", 300, 0));
+    	
+    	Random rand = new Random();
 
-        spawnMap.put(400, new SpawnDetails("Alien1", 400, 0));
-        spawnMap.put(401, new SpawnDetails("Alien1", 450, 0));
-        spawnMap.put(402, new SpawnDetails("Alien1", 500, 0));
-        spawnMap.put(403, new SpawnDetails("Alien1", 550, 0));
+    	spawnMap.put(300, new SpawnDetails("PowerUp-SpeedUp", BOARD_WIDTH - 60, 100 + randomizer.nextInt(BOARD_HEIGHT - 200)));
+    	spawnMap.put(1200, new SpawnDetails("PowerUp-SpeedUp", BOARD_WIDTH - 60, 100 + randomizer.nextInt(BOARD_HEIGHT - 200)));
 
-        spawnMap.put(500, new SpawnDetails("Alien1", 100, 0));
-        spawnMap.put(501, new SpawnDetails("Alien1", 150, 0));
-        spawnMap.put(502, new SpawnDetails("Alien1", 200, 0));
-        spawnMap.put(503, new SpawnDetails("Alien1", 350, 0));
+    	spawnMap.put(150, new SpawnDetails("PowerUp-MultiShot", BOARD_WIDTH - 60, 100 + randomizer.nextInt(BOARD_HEIGHT - 200)));
+    	spawnMap.put(600, new SpawnDetails("PowerUp-MultiShot", BOARD_WIDTH - 60, 100 + randomizer.nextInt(BOARD_HEIGHT - 200)));
+    	spawnMap.put(1050, new SpawnDetails("PowerUp-MultiShot", BOARD_WIDTH - 60, 100 + randomizer.nextInt(BOARD_HEIGHT - 200)));
+    	spawnMap.put(1650, new SpawnDetails("PowerUp-MultiShot", BOARD_WIDTH - 60, 100 + randomizer.nextInt(BOARD_HEIGHT - 200)));
+        
+    	//spawnMap.put(10, new SpawnDetails("Boss1", BOARD_WIDTH - 60, 250));
+
+        for (int f = 100; f < 3600; f += 120) {
+            spawnMap.put(f, new SpawnDetails("Alien2", BOARD_WIDTH - 60, 80 + rand.nextInt(BOARD_HEIGHT - 200)));
+        }
+
+        for (int f = 3600; f < 7200; f += 120) {
+            spawnMap.put(f, new SpawnDetails("Alien1", BOARD_WIDTH - 60, 80 + rand.nextInt(BOARD_HEIGHT - 200)));
+            spawnMap.put(f + 45, new SpawnDetails("Alien2", BOARD_WIDTH - 60, 80 + rand.nextInt(BOARD_HEIGHT - 200)));
+        }
+
+        for (int f = 7200; f < 10800; f += 120) {
+            spawnMap.put(f, new SpawnDetails("Alien2", BOARD_WIDTH - 60, 80 + rand.nextInt(BOARD_HEIGHT - 200)));
+            spawnMap.put(f + 30, new SpawnDetails("Alien3", BOARD_WIDTH - 60, 80 + rand.nextInt(BOARD_HEIGHT - 200)));
+        }
+
+        for (int f = 10800; f <= 18000; f += 120) {
+            String type = (f % 3 == 0) ? "Alien3" : (f % 2 == 0) ? "Alien2" : "Alien1";
+            spawnMap.put(f, new SpawnDetails(type, BOARD_WIDTH - 60, 80 + rand.nextInt(BOARD_HEIGHT - 200)));
+        }
+
+        spawnMap.put(18000, new SpawnDetails("Boss1", BOARD_WIDTH - 60, 250));
     }
 
     private void initBoard() {
@@ -142,7 +174,10 @@ public class Scene1 extends JPanel {
     }
 
     public void stop() {
-        timer.stop();
+    	if (timer != null) {
+            timer.stop();
+        }
+        
         try {
             if (audioPlayer != null) {
                 audioPlayer.stop();
@@ -159,15 +194,11 @@ public class Scene1 extends JPanel {
         explosions = new ArrayList<>();
         shots = new ArrayList<>();
 
-        // for (int i = 0; i < 4; i++) {
-        // for (int j = 0; j < 6; j++) {
-        // var enemy = new Enemy(ALIEN_INIT_X + (ALIEN_WIDTH + ALIEN_GAP) * j,
-        // ALIEN_INIT_Y + (ALIEN_HEIGHT + ALIEN_GAP) * i);
-        // enemies.add(enemy);
-        // }
-        // }
         player = new Player();
-        // shot = new Shot();
+    }
+    
+    private void drawBackground(Graphics g) {
+    	g.drawImage(bgImage, 0, 0, BOARD_WIDTH, BOARD_HEIGHT, this);
     }
 
     private void drawMap(Graphics g) {
@@ -177,28 +208,28 @@ public class Scene1 extends JPanel {
         int scrollOffset = (frame) % BLOCKHEIGHT;
 
         // Calculate which rows to draw based on screen position
-        int baseRow = (frame) / BLOCKHEIGHT;
-        int rowsNeeded = (BOARD_HEIGHT / BLOCKHEIGHT) + 2; // +2 for smooth scrolling
+        int baseCol = (frame) / BLOCKHEIGHT;
+        int colsNeeded = (BOARD_WIDTH / BLOCKWIDTH) + 2; // +2 for smooth scrolling
 
         // Loop through rows that should be visible on screen
-        for (int screenRow = 0; screenRow < rowsNeeded; screenRow++) {
+        for (int screenCol = 0; screenCol < colsNeeded; screenCol++) {
             // Calculate which MAP row to use (with wrapping)
-            int mapRow = (baseRow + screenRow) % MAP.length;
+            int mapCol = (baseCol + screenCol) % MAP[0].length;
 
             // Calculate Y position for this row
             // int y = (screenRow * BLOCKHEIGHT) - scrollOffset;
-            int y = BOARD_HEIGHT - ( (screenRow * BLOCKHEIGHT) - scrollOffset );
+            int x = ((screenCol * BLOCKWIDTH) - scrollOffset);
 
             // Skip if row is completely off-screen
-            if (y > BOARD_HEIGHT || y < -BLOCKHEIGHT) {
+            if (x > BOARD_WIDTH || x < -BLOCKWIDTH) {
                 continue;
             }
 
             // Draw each column in this row
-            for (int col = 0; col < MAP[mapRow].length; col++) {
-                if (MAP[mapRow][col] == 1) {
+            for (int row = 0; row < MAP.length; row++) {
+                if (MAP[row][mapCol] == 1) {
                     // Calculate X position
-                    int x = col * BLOCKWIDTH;
+                	int y = row * BLOCKHEIGHT;
 
                     // Draw a cluster of stars
                     drawStarCluster(g, x, y, BLOCKWIDTH, BLOCKHEIGHT);
@@ -236,8 +267,12 @@ public class Scene1 extends JPanel {
         for (Enemy enemy : enemies) {
 
             if (enemy.isVisible()) {
+            	g.drawImage(enemy.getExhaustImage(), 
+                        enemy.getX() + enemy.getExhaustOffsetX(), 
+                        enemy.getY() + enemy.getExhaustOffsetY(), 
+                        this);
 
-                g.drawImage(enemy.getImage(), enemy.getX(), enemy.getY(), this);
+            	g.drawImage(enemy.getImage(), enemy.getX(), enemy.getY(), this);
             }
 
             if (enemy.isDying()) {
@@ -267,13 +302,15 @@ public class Scene1 extends JPanel {
 
         if (player.isVisible()) {
 
-            g.drawImage(player.getImage(), player.getX(), player.getY(), this);
+        	g.drawImage(player.getExhaustImage(), player.getX() - 64, player.getY(), this);
+        	g.drawImage(player.getImage(), player.getX(), player.getY(), this);
+            g.setColor(Color.BLUE);
+            //g.drawRect(player.getX(), player.getY(), PLAYER_WIDTH * SCALE_FACTOR, PLAYER_HEIGHT * SCALE_FACTOR);
         }
 
         if (player.isDying()) {
 
             player.die();
-            inGame = false;
         }
     }
 
@@ -289,12 +326,13 @@ public class Scene1 extends JPanel {
 
     private void drawBombing(Graphics g) {
 
-        // for (Enemy e : enemies) {
-        //     Enemy.Bomb b = e.getBomb();
-        //     if (!b.isDestroyed()) {
-        //         g.drawImage(b.getImage(), b.getX(), b.getY(), this);
-        //     }
-        // }
+    	for (Enemy enemy : enemies) {
+            for (Enemy.Bomb b : enemy.getBombs()) {
+                if (!b.isDestroyed()) {
+                    g.drawImage(b.getImage(), b.getX(), b.getY(), this);
+                }
+            }
+        }
     }
 
     private void drawExplosions(Graphics g) {
@@ -324,23 +362,41 @@ public class Scene1 extends JPanel {
 
     private void doDrawing(Graphics g) {
 
-        g.setColor(Color.black);
-        g.fillRect(0, 0, d.width, d.height);
-
-        g.setColor(Color.white);
-        g.drawString("FRAME: " + frame, 10, 10);
-
-        g.setColor(Color.green);
+        
 
         if (inGame) {
 
+        	drawBackground(g);
             drawMap(g);  // Draw background stars first
             drawExplosions(g);
             drawPowreUps(g);
             drawAliens(g);
             drawPlayer(g);
             drawShot(g);
+            drawBombing(g);
+            
+            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
 
+            g.setColor(new Color(0, 0, 0, 180));
+            g.fillRect(10, 10, 450, 110);
+
+            g.setColor(Color.YELLOW);
+            g.drawString("SCORE: "+ deaths, 20, 30); // Note: Replace 'score' with your score variable if different
+
+            g.setColor(Color.WHITE);
+            g.drawString("SPEED: " + player.getSpeed() + " (Speed-ups power-up collected: " + speedUpsCollected + ")", 20, 55);
+            g.drawString("SHOTS: " + player.getMaxShots() + " / 5 (Multi-shots power-up collected: " + multiShotsCollected + ")", 20, 80);
+
+            g.setColor(Color.GRAY);
+            g.drawString("FRAME: " + frame, 20, 105);
+
+            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 50));
+            g.setColor(Color.CYAN);
+            g.drawString("WAVE: " + Wave + " / 5", 20, 170);
+            
+            g.setFont(new Font(Font.MONOSPACED, Font.BOLD, 25));
+            g.setColor(Color.CYAN);
+            g.drawString("Objective : Protect Jupiter from Alien Invasion", 800, 25);
         } else {
 
             if (timer.isRunning()) {
@@ -387,24 +443,50 @@ public class Scene1 extends JPanel {
                     break;
                 // Add more cases for different enemy types if needed
                 case "Alien2":
-                    // Enemy enemy2 = new Alien2(sd.x, sd.y);
-                    // enemies.add(enemy2);
+                    Enemy enemy2 = new Alien2(sd.x, sd.y);
+                    enemies.add(enemy2);
+                    break;
+                case "Alien3":
+                    Enemy enemy3 = new Alien3(sd.x, sd.y);
+                    enemies.add(enemy3);
+                    break;
+                case "Boss1":
+                    enemies.add(new Boss1(sd.x, sd.y));
+                    break;
+                case "Boss2":
+                    enemies.add(new Boss2(sd.x, sd.y));
                     break;
                 case "PowerUp-SpeedUp":
                     // Handle speed up item spawn
                     PowerUp speedUp = new SpeedUp(sd.x, sd.y);
                     powerups.add(speedUp);
                     break;
+                case "PowerUp-MultiShot":
+                	powerups.add(new MultiShot(sd.x, sd.y));
+                    break;
                 default:
                     System.out.println("Unknown enemy type: " + sd.type);
                     break;
             }
         }
+        if (frame < 3600) {
+            Wave = 1;
+        } else if (frame < 7200) {
+            Wave = 2;
+        } else if (frame < 10800) {
+            Wave = 3;
+        } else if (frame < 16200) {
+            Wave = 4;
+        } else {
+            Wave = 5;
+        }
 
-        if (deaths == NUMBER_OF_ALIENS_TO_DESTROY) {
-            inGame = false;
+        if (deaths >= NUMBER_OF_ALIENS_TO_DESTROY) {
+            /*inGame = false;
             timer.stop();
-            message = "Game won!";
+            message = "Game won!";*/
+        	game.loadBossConfirmScene();
+            return;       
         }
 
         // player
@@ -415,7 +497,16 @@ public class Scene1 extends JPanel {
             if (powerup.isVisible()) {
                 powerup.act();
                 if (powerup.collidesWith(player)) {
+                	
+                	if (powerup instanceof SpeedUp) {
+                        speedUpsCollected++;
+                        SFXPlayer.play("src/audio/powerup.wav");
+                    } else if (powerup instanceof MultiShot) {
+                        multiShotsCollected++;
+                        SFXPlayer.play("src/audio/powerup2.wav");
+                    }
                     powerup.upgrade(player);
+                   
                 }
             }
         }
@@ -424,6 +515,46 @@ public class Scene1 extends JPanel {
         for (Enemy enemy : enemies) {
             if (enemy.isVisible()) {
                 enemy.act(direction);
+                if (enemy instanceof Boss1 && ((Boss1) enemy).getHealth() <= 0) {
+                    if (!bossDefeated) {
+                        bossDefeated = true;
+                        int expX = enemy.getX() + (enemy.getImage().getWidth(null) - 160) / 2;
+                        int expY = enemy.getY() + (enemy.getImage().getHeight(null) - 160) / 2;
+                        explosions.add(new Explosion(expX, expY));
+                        SFXPlayer.play("src/audio/explosion-wav.wav");
+                    }
+                } 
+                else if (enemy instanceof Boss2 && ((Boss2) enemy).getHealth() <= 0) {
+                    if (!bossDefeated) {
+                        bossDefeated = true;
+                        int expX = enemy.getX() + (enemy.getImage().getWidth(null) - 160) / 2;
+                        int expY = enemy.getY() + (enemy.getImage().getHeight(null) - 160) / 2;
+                        explosions.add(new Explosion(expX, expY));
+                        SFXPlayer.play("src/audio/explosion-wav.wav");
+                    }
+                }
+                int playerX = player.getX();
+                int playerY = player.getY();
+                int playerW = PLAYER_WIDTH * SCALE_FACTOR;
+                int playerH = PLAYER_HEIGHT * SCALE_FACTOR;
+
+                int enemyX = enemy.getX();
+                int enemyY = enemy.getY();
+                int enemyW = enemy.getImage().getWidth(null);
+                int enemyH = enemy.getImage().getHeight(null);
+
+                if (player.isVisible() &&
+                    playerX < enemyX + enemyW &&
+                    playerX + playerW > enemyX &&
+                    playerY < enemyY + enemyH &&
+                    playerY + playerH > enemyY) {
+
+                    int expX = playerX + (playerW - 160) / 2;
+                    int expY = playerY + (playerH - 160) / 2;
+                    explosions.add(new Explosion(expX, expY));
+                    SFXPlayer.play("src/audio/explosion-wav.wav");
+                    player.setDying(true);
+                }
             }
         }
 
@@ -437,78 +568,96 @@ public class Scene1 extends JPanel {
 
                 for (Enemy enemy : enemies) {
                     // Collision detection: shot and enemy
+                	
+                    if (enemy.getX() <= 0) {
+                        game.loadGameOverScene();
+                        return;
+                    }
                     int enemyX = enemy.getX();
                     int enemyY = enemy.getY();
+                    int boxWidth = enemy.getImage().getWidth(null);
+                    int boxHeight = enemy.getImage().getHeight(null);
 
                     if (enemy.isVisible() && shot.isVisible()
                             && shotX >= (enemyX)
-                            && shotX <= (enemyX + ALIEN_WIDTH)
+                            && shotX <= (enemyX + boxWidth)
                             && shotY >= (enemyY)
-                            && shotY <= (enemyY + ALIEN_HEIGHT)) {
+                            && shotY <= (enemyY + boxHeight)) {
 
-                        var ii = new ImageIcon(IMG_EXPLOSION);
-                        enemy.setImage(ii.getImage());
+                        
                         enemy.setDying(true);
-                        explosions.add(new Explosion(enemyX, enemyY));
+                        
+                        SFXPlayer.play("src/audio/explosion-wav.wav");
+                        
                         deaths++;
                         shot.die();
                         shotsToRemove.add(shot);
+                     
+                        if (enemy instanceof Boss1 && ((Boss1) enemy).getHealth() <= 0) {
+                            if (!bossDefeated) {
+                                bossDefeated = true;
+                                int expX = enemyX + (boxWidth - 160) / 2;
+                                int expY = enemyY + (boxHeight - 160) / 2;
+                                explosions.add(new Explosion(expX, expY));
+                                SFXPlayer.play("src/audio/explosion-wav.wav");
+                            }
+                        } else if (!(enemy instanceof Boss1)) {
+                            int expX = enemyX + (boxWidth - 160) / 2;
+                            int expY = enemyY + (boxHeight - 160) / 2;
+                            explosions.add(new Explosion(expX, expY));
+                            SFXPlayer.play("src/audio/explosion-wav.wav");
+                        }
                     }
                 }
 
-                int y = shot.getY();
+                int x = shot.getX();
                 // y -= 4;
-                y -= 20;
+                x += 20;
 
-                if (y < 0) {
+                if (x > BOARD_WIDTH) {
                     shot.die();
                     shotsToRemove.add(shot);
                 } else {
-                    shot.setY(y);
+                    shot.setX(x);
                 }
             }
         }
         shots.removeAll(shotsToRemove);
 
-        // enemies
-        // for (Enemy enemy : enemies) {
-        //     int x = enemy.getX();
-        //     if (x >= BOARD_WIDTH - BORDER_RIGHT && direction != -1) {
-        //         direction = -1;
-        //         for (Enemy e2 : enemies) {
-        //             e2.setY(e2.getY() + GO_DOWN);
-        //         }
-        //     }
-        //     if (x <= BORDER_LEFT && direction != 1) {
-        //         direction = 1;
-        //         for (Enemy e : enemies) {
-        //             e.setY(e.getY() + GO_DOWN);
-        //         }
-        //     }
-        // }
-        // for (Enemy enemy : enemies) {
-        //     if (enemy.isVisible()) {
-        //         int y = enemy.getY();
-        //         if (y > GROUND - ALIEN_HEIGHT) {
-        //             inGame = false;
-        //             message = "Invasion!";
-        //         }
-        //         enemy.act(direction);
-        //     }
-        // }
-        // bombs - collision detection
-        // Bomb is with enemy, so it loops over enemies
-        /*
+        if (bossDefeated) {
+            transitionDelay++;
+            
+            
+            if (transitionDelay >= 60) {
+                
+                game.loadBossConfirmScene();
+                return;
+            }
+        }
+        if (!player.isVisible()) {
+            playerDeathDelay++;
+            
+            
+            if (playerDeathDelay >= 60) {
+                game.loadGameOverScene();
+                return;
+            }
+        }
+        
+        
         for (Enemy enemy : enemies) {
 
-            int chance = randomizer.nextInt(15);
+            int chance = randomizer.nextInt(50);
             Enemy.Bomb bomb = enemy.getBomb();
 
             if (chance == CHANCE && enemy.isVisible() && bomb.isDestroyed()) {
 
                 bomb.setDestroyed(false);
                 bomb.setX(enemy.getX());
-                bomb.setY(enemy.getY());
+                bomb.setY(enemy.getY()+ ((ALIEN_HEIGHT * SCALE_FACTOR) / 2));
+                int dy = (randomizer.nextInt(3) - 1) * 2; 
+                bomb.setVelocity(-3, dy);
+                SFXPlayer.play("src/audio/Laser-wav.wav");
             }
 
             int bombX = bomb.getX();
@@ -518,24 +667,140 @@ public class Scene1 extends JPanel {
 
             if (player.isVisible() && !bomb.isDestroyed()
                     && bombX >= (playerX)
-                    && bombX <= (playerX + PLAYER_WIDTH)
+                    && bombX <= (playerX + PLAYER_WIDTH * SCALE_FACTOR)
                     && bombY >= (playerY)
-                    && bombY <= (playerY + PLAYER_HEIGHT)) {
+                    && bombY <= (playerY + PLAYER_HEIGHT * SCALE_FACTOR)) {
 
-                var ii = new ImageIcon(IMG_EXPLOSION);
-                player.setImage(ii.getImage());
+            	int expX = playerX + (PLAYER_WIDTH * SCALE_FACTOR)-160 / 2;
+            	int expY = playerY + (PLAYER_HEIGHT * SCALE_FACTOR)-160 / 2;
+            	explosions.add(new Explosion(expX, expY));
+            	SFXPlayer.play("src/audio/explosion-wav.wav");
                 player.setDying(true);
                 bomb.setDestroyed(true);
             }
 
             if (!bomb.isDestroyed()) {
-                bomb.setY(bomb.getY() + 1);
-                if (bomb.getY() >= GROUND - BOMB_HEIGHT) {
+            	bomb.setX(bomb.getX() + bomb.getDx());
+                bomb.setY(bomb.getY() + bomb.getDy());
+
+                
+                if (bomb.getX() <= 0 || bomb.getX() >= BOARD_WIDTH || bomb.getY() <= 0 || bomb.getY() >= BOARD_HEIGHT) {
                     bomb.setDestroyed(true);
                 }
             }
         }
-         */
+        for (Enemy enemy : enemies) {
+            if (!enemy.isVisible()) continue;
+
+            
+            if (enemy instanceof Boss1) {
+                Enemy.Bomb[] bossBombs = enemy.getBombs();
+
+                boolean allDestroyed = true;
+                for (Enemy.Bomb b : bossBombs) {
+                    if (!b.isDestroyed()) {
+                        allDestroyed = false;
+                        break;
+                    }
+                }
+
+                if (allDestroyed && frame % 30 == 0) {
+                    int frontX = enemy.getX();          
+                    int topY = enemy.getY() + 50;       
+                    int bottomY = enemy.getY() + 200;    
+
+                    bossBombs[0].setDestroyed(false);
+                    bossBombs[0].setX(frontX);
+                    bossBombs[0].setY(topY);
+                    bossBombs[0].setVelocity(-5, 0);
+
+                    bossBombs[1].setDestroyed(false);
+                    bossBombs[1].setX(frontX);
+                    bossBombs[1].setY(bottomY);
+                    bossBombs[1].setVelocity(-5, 0); 
+
+                    SFXPlayer.play("src/audio/Laser-wav.wav");
+                }
+            }
+            else if (enemy instanceof Boss2) {
+                Enemy.Bomb[] bossBombs = enemy.getBombs();
+                
+                boolean allDestroyed = true;
+                for (Enemy.Bomb b : bossBombs) {
+                    if (!b.isDestroyed()) {
+                        allDestroyed = false;
+                        break;
+                    }
+                }
+
+                if (allDestroyed && frame % 60 == 0) {
+                    int centerX = enemy.getX() + 175; 
+                    int centerY = enemy.getY() + 125; 
+
+                    bossBombs[0].setDestroyed(false);
+                    bossBombs[0].setX(centerX);
+                    bossBombs[0].setY(centerY);
+                    bossBombs[0].setVelocity(-4, -2);
+
+                    bossBombs[1].setDestroyed(false);
+                    bossBombs[1].setX(centerX);
+                    bossBombs[1].setY(centerY);
+                    bossBombs[1].setVelocity(-4, 0);
+
+                    bossBombs[2].setDestroyed(false);
+                    bossBombs[2].setX(centerX);
+                    bossBombs[2].setY(centerY);
+                    bossBombs[2].setVelocity(-4, 2);
+
+                    SFXPlayer.play("src/audio/Laser-wav.wav");
+                }
+            } 
+            else {
+                Enemy.Bomb bomb = enemy.getBomb();
+                int chance = randomizer.nextInt(300);
+                if (chance == CHANCE && bomb.isDestroyed()) {
+                    bomb.setDestroyed(false);
+                    bomb.setX(enemy.getX());
+                    bomb.setY(enemy.getY() + ((ALIEN_HEIGHT * SCALE_FACTOR) / 2));
+                    int dy = (randomizer.nextInt(3) - 1) * 2;
+                    bomb.setVelocity(-3, dy);
+                    SFXPlayer.play("src/audio/Laser-wav.wav");
+                }
+            }
+
+            for (Enemy.Bomb bomb : enemy.getBombs()) {
+                if (bomb.isDestroyed()) continue;
+
+                bomb.setX(bomb.getX() + bomb.getDx());
+                bomb.setY(bomb.getY() + bomb.getDy());
+
+                int bombX = bomb.getX();
+                int bombY = bomb.getY();
+                int playerX = player.getX();
+                int playerY = player.getY();
+
+                // Player collision check
+                if (player.isVisible()
+                        && bombX >= playerX
+                        && bombX <= (playerX + PLAYER_WIDTH * SCALE_FACTOR)
+                        && bombY >= playerY
+                        && bombY <= (playerY + PLAYER_HEIGHT * SCALE_FACTOR)) {
+
+                    int expX = playerX + (PLAYER_WIDTH * SCALE_FACTOR) - 160 / 2;
+                    int expY = playerY + (PLAYER_HEIGHT * SCALE_FACTOR) - 160 / 2;
+                    explosions.add(new Explosion(expX, expY));
+                    SFXPlayer.play("src/audio/explosion-wav.wav");
+                    player.setDying(true);
+                    bomb.setDestroyed(true);
+                }
+
+                // Off-screen boundary check
+                if (bomb.getX() <= 0 || bomb.getY() <= 0 || bomb.getY() >= BOARD_HEIGHT) {
+                    bomb.setDestroyed(true);
+                }
+            }
+        }
+         
     }
 
     private void doGameCycle() {
@@ -572,11 +837,11 @@ public class Scene1 extends JPanel {
 
             if (key == KeyEvent.VK_SPACE && inGame) {
                 System.out.println("Shots: " + shots.size());
-                if (shots.size() < 4) {
-                    // Create a new shot and add it to the list
+            	if (shots.size() < player.getMaxShots()) { 
                     Shot shot = new Shot(x, y);
                     shots.add(shot);
                 }
+            	//SFXPlayer.play("src/audio/shot-wav.wav");
             }
 
         }

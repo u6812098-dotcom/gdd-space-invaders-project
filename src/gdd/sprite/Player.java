@@ -1,81 +1,114 @@
 package gdd.sprite;
 
 import static gdd.Global.*;
-import java.awt.Rectangle;
+import java.awt.Image;
 import java.awt.event.KeyEvent;
 import javax.swing.ImageIcon;
 
 public class Player extends Sprite {
-
-    private static final int START_X = 270;
-    private static final int START_Y = 540;
-    private int width;
-    private int currentSpeed = 2;
-
-    private Rectangle bounds = new Rectangle(175,135,17,32);
+    
+    private int dx;
+    private int dy;
+    private int animTick = 0;
+    private int exhaustTick = 0;
+    
+    private int maxShots = 1; 
+    private int speed = 10;  
+    
+    private final String[] exhaustFrames = {
+            IMG_PLAYERexhaust1, 
+            IMG_PLAYERexhaust2, 
+            IMG_PLAYERexhaust3
+    };
+    private int exhaustIndex = 0;
 
     public Player() {
         initPlayer();
     }
 
     private void initPlayer() {
-        var ii = new ImageIcon(IMG_PLAYER);
+        ImageIcon ii = new ImageIcon(IMG_PLAYER);
+        setImage(ii.getImage());
+        setX(70);
+        setY(300);
+    }
 
-        // Scale the image to use the global scaling factor
-        var scaledImage = ii.getImage().getScaledInstance(ii.getIconWidth() * SCALE_FACTOR,
-                ii.getIconHeight() * SCALE_FACTOR,
-                java.awt.Image.SCALE_SMOOTH);
-        setImage(scaledImage);
+    
+    public int getMaxShots() {
+        return maxShots;
+    }
 
-        setX(START_X);
-        setY(START_Y);
+    public void setMaxShots(int maxShots) {
+        this.maxShots = maxShots;
     }
 
     public int getSpeed() {
-        return currentSpeed;
+        return speed;
     }
 
-    public int setSpeed(int speed) {
-        if (speed < 1) {
-            speed = 1; // Ensure speed is at least 1
-        }
-        this.currentSpeed = speed;
-        return currentSpeed;
+    public void setSpeed(int speed) {
+        this.speed = speed;
     }
 
     public void act() {
-        x += dx;
+    	x += dx;
+        y += dy;
 
-        if (x <= 2) {
-            x = 2;
+        // Screen boundaries clamping
+        if (x <= 2) { x = 2; }
+        if (x >= BOARD_WIDTH - PLAYER_WIDTH) { x = BOARD_WIDTH - PLAYER_WIDTH; }
+        if (y <= 2) { y = 2; }
+        if (y >= BOARD_HEIGHT - PLAYER_HEIGHT - 50) { y = BOARD_HEIGHT - PLAYER_HEIGHT - 50; }
+
+        updateAnimationState();
+    }
+    
+    public Image getExhaustImage() {
+    	ImageIcon ii = new ImageIcon(exhaustFrames[exhaustIndex]);
+        return ii.getImage();
+    }
+    
+    private void updateAnimationState() {
+        animTick++;
+        exhaustTick++;
+        if (exhaustTick >= 2) {
+            exhaustTick = 0;
+            exhaustIndex = (exhaustIndex + 1) % exhaustFrames.length;
         }
 
-        if (x >= BOARD_WIDTH - 2 * width) {
-            x = BOARD_WIDTH - 2 * width;
+        String playerImage;
+        if (dy < 0) { 
+            playerImage = (animTick / 6 % 2 == 0) ? IMG_PLAYERup1 : IMG_PLAYERup2;
+        } else if (dy > 0) { 
+            playerImage = (animTick / 6 % 2 == 0) ? IMG_PLAYERdown1 : IMG_PLAYERdown2;
+        } else { 
+            playerImage = IMG_PLAYER;
         }
+
+        ImageIcon ii = new ImageIcon(playerImage);
+        setImage(ii.getImage());
     }
 
     public void keyPressed(KeyEvent e) {
-        int key = e.getKeyCode();
+    	int key = e.getKeyCode();
 
         if (key == KeyEvent.VK_LEFT) {
-            dx = -currentSpeed;
+            dx = -speed;
         }
-
         if (key == KeyEvent.VK_RIGHT) {
-            dx = currentSpeed;
+            dx = speed;
+        }
+        if (key == KeyEvent.VK_UP) {
+            dy = -speed;
+        }
+        if (key == KeyEvent.VK_DOWN) {
+            dy = speed;
         }
     }
 
     public void keyReleased(KeyEvent e) {
-        int key = e.getKeyCode();
-
-        if (key == KeyEvent.VK_LEFT) {
-            dx = 0;
-        }
-
-        if (key == KeyEvent.VK_RIGHT) {
-            dx = 0;
-        }
+    	int key = e.getKeyCode();
+        if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_RIGHT) { dx = 0; }
+        if (key == KeyEvent.VK_UP || key == KeyEvent.VK_DOWN) { dy = 0; }
     }
 }

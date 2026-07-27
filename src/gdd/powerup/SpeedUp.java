@@ -23,15 +23,14 @@ public class SpeedUp extends PowerUp {
     }
 
     public void act() {
-        // SpeedUp specific behavior can be added here
-        // For now, it just moves down the screen
-        this.y += 2; // Move down by 2 pixel each frame
+        this.x -= 2; // Move down by 2 pixel each frame
     }
 
+    @Override
     public void upgrade(Player player) {
-        // Upgrade the player with speed boost
-        player.setSpeed(player.getSpeed() + 4); // Increase player's speed by 1
-        this.die(); // Remove the power-up after use
+        // Increase player's speed by 2 steps
+        player.setSpeed(player.getSpeed() + 5);
+        this.die();
     }
 
 }

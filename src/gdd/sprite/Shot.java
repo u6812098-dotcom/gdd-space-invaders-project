@@ -1,32 +1,43 @@
 package gdd.sprite;
 
+import gdd.SFXPlayer;
 import static gdd.Global.*;
 import javax.swing.ImageIcon;
 
 public class Shot extends Sprite {
 
-    private static final int H_SPACE = 20;
-    private static final int V_SPACE = 1;
-
+    private boolean shotToggle = false;
+    private int toggleCounter = 0;
+    
     public Shot() {
     }
 
     public Shot(int x, int y) {
 
         initShot(x, y);
+        SFXPlayer.play("src/audio/shot-wav.wav");
+    }
+    
+    @Override
+    public void act() {
+    	toggleCounter++;
+        if (toggleCounter > 20) {
+            toggleCounter = 0;
+            shotToggle = !shotToggle;
+            String shotPath = shotToggle ? IMG_SHOT : IMG_SHOT2;
+            ImageIcon ii = new ImageIcon(shotPath);
+            setImage(ii.getImage());
+        }
+        int x = getX();
+        x += 20;
+        setX(x);
     }
 
     private void initShot(int x, int y) {
-
-        var ii = new ImageIcon(IMG_SHOT);
-
-        // Scale the image to use the global scaling factor
-        var scaledImage = ii.getImage().getScaledInstance(ii.getIconWidth() * SCALE_FACTOR,
-                ii.getIconHeight() * SCALE_FACTOR, 
-                java.awt.Image.SCALE_SMOOTH);
-        setImage(scaledImage);
-
-        setX(x + H_SPACE);
-        setY(y - V_SPACE);
+    	setX(x + PLAYER_WIDTH);
+        setY(y + (PLAYER_HEIGHT * 2 / 6));
+        
+        ImageIcon ii = new ImageIcon(IMG_SHOT);
+        setImage(ii.getImage());
     }
 }

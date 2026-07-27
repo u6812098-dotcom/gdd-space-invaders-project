@@ -27,8 +27,8 @@ public class TitleScene extends JPanel {
 
     public TitleScene(Game game) {
         this.game = game;
-        // initBoard();
-        // initTitle();
+        initBoard();
+        initTitle();
     }
 
     private void initBoard() {
@@ -91,25 +91,25 @@ public class TitleScene extends JPanel {
         g.setColor(Color.black);
         g.fillRect(0, 0, d.width, d.height);
 
-        g.drawImage(image, 0, -80, d.width, d.height, this);
+        g.drawImage(image, 0, 0, d.width, d.height, this);
 
-        if (frame % 60 < 30) {
+        if (frame % 80 < 30) {
             g.setColor(Color.red);
         } else {
             g.setColor(Color.white);
         }
 
-        g.setFont(g.getFont().deriveFont(32f));
+        g.setFont(g.getFont().deriveFont(64f));
         String text = "Press SPACE to Start";
         int stringWidth = g.getFontMetrics().stringWidth(text);
         int x = (d.width - stringWidth) / 2;
         // int stringHeight = g.getFontMetrics().getAscent();
         // int y = (d.height + stringHeight) / 2;
-        g.drawString(text, x, 600);
+        g.drawString(text, x, d.height - 100);
 
         g.setColor(Color.gray);
         g.setFont(g.getFont().deriveFont(10f));
-        g.drawString("Game by Chayapol", 10, 650);
+        g.drawString("Game by Chayapol", 10, d.height - 50);
 
         Toolkit.getDefaultToolkit().sync();
     }
@@ -144,7 +144,7 @@ public class TitleScene extends JPanel {
             int key = e.getKeyCode();
             if (key == KeyEvent.VK_SPACE) {
                 // Load the next scene
-                game.loadScene2();
+                game.loadScene1();
             }
 
         }
