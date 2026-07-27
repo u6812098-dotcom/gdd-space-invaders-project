@@ -1,13 +1,22 @@
-# \-Team members-6812098-Thu Ta Aung-6736501-Sai Thiha Aung-
+# Project 01 - Side-Scrolling Shooter
 
 ## References
 
 This project is based from this
 [Space Invader](https://github.com/janbodnar/Java-Space-Invaders) repository.
 
+
+
+
+
 \-Team members-
--6812098-Thu Ta Aung-
--6736501-Sai Thiha Aung-
+-6812098-Thu Ta Aung
+-6736501-Sai Thiha Aung
+---
+
+
+
+
 
 \-Project Details-
 
